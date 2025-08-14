@@ -1,1 +1,1 @@
-errors.o: errors.c
+errors.o: errors.c errors.h
