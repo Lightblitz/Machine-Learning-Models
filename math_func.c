@@ -10,3 +10,8 @@ double nml_rand_interval(double min, double max) {
   d = (double) rand() / ((double) RAND_MAX + 1);
   return (min + d * (max - min));
 }
+/*
+double nml_exp(double base, const int exp) {
+  
+}
+*/

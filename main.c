@@ -123,6 +123,78 @@ int main(void) {
                 printf("Matrix #%u = Matrix #%u * Matrix #%u\n", dest, m1, m2);
             }
 
+        } else if (strcmp(cmd, "mat_neg") == 0) {
+            unsigned dest, src;
+            if (scanf("%u %u", &dest, &src) == 2 &&
+                dest < MATRIX_COUNT && src < MATRIX_COUNT && matrices[src]) {
+                if (matrices[dest]) {
+                    printf("Error: destination #%u not freed. Use 'free %u' first.\n", dest, dest);
+                } else {
+                    matrices[dest] = mat_neg(matrices[src]);
+                    printf("Matrix #%u = -Matrix #%u\n", dest, src);
+                }
+            }
+
+        } else if (strcmp(cmd, "mat_transpose") == 0) {
+            unsigned dest, src;
+            if (scanf("%u %u", &dest, &src) == 2 &&
+                dest < MATRIX_COUNT && src < MATRIX_COUNT && matrices[src]) {
+                if (matrices[dest]) {
+                    printf("Error: destination #%u not freed. Use 'free %u' first.\n", dest, dest);
+                } else {
+                    matrices[dest] = mat_transpose(matrices[src]);
+                    printf("Matrix #%u = (Matrix #%u)^T\n", dest, src);
+                }
+            }
+
+        } else if (strcmp(cmd, "ero_scalar") == 0) {
+            unsigned idx;
+            int row;
+            double scalar;
+            if (scanf("%u %d %lf", &idx, &row, &scalar) == 3 &&
+                idx < MATRIX_COUNT && matrices[idx]) {
+                mat_ero_scalar(matrices[idx], row, scalar);
+                printf("Scaled row %d of Matrix #%u by %.2f\n", row, idx, scalar);
+            }
+
+        } else if (strcmp(cmd, "ero_swap") == 0) {
+            unsigned idx;
+            int r1, r2;
+            if (scanf("%u %d %d", &idx, &r1, &r2) == 3 &&
+                idx < MATRIX_COUNT && matrices[idx]) {
+                mat_ero_swap(matrices[idx], r1, r2);
+                printf("Swapped rows %d and %d of Matrix #%u\n", r1, r2, idx);
+            }
+
+        } else if (strcmp(cmd, "ero_add") == 0) {
+            unsigned idx;
+            int r1, r2;
+            double scalar;
+            if (scanf("%u %d %d %lf", &idx, &r1, &r2, &scalar) == 4 &&
+                idx < MATRIX_COUNT && matrices[idx]) {
+                mat_ero_add(matrices[idx], r1, r2, scalar);
+                printf("Added %.2lf * row %d into row %d of Matrix #%u\n", scalar, r2, r1, idx);
+            }
+        } else if (strcmp(cmd, "ref") == 0) {
+            unsigned dest, src;
+            if (scanf("%u %u", &dest, &src) == 2 && dest < MATRIX_COUNT && src < MATRIX_COUNT && matrices[src]) {
+                if (matrices[dest]) {
+                    printf("Error: destination #%u not freed. Use 'free %u' first.\n", dest, dest);
+                } else {
+                    matrices[dest] = mat_ref(matrices[src]);
+                    printf("Matrix #%u = REF of Matrix #%u\n", dest, src);
+                }
+            }
+        } else if (strcmp(cmd, "rref") == 0) {
+            unsigned dest, src;
+            if (scanf("%u %u", &dest, &src) == 2 && dest < MATRIX_COUNT && src < MATRIX_COUNT && matrices[src]) {
+                if (matrices[dest]) {
+                    printf("Error: destination #%u not freed. Use 'free %u' first.\n", dest, dest);
+                } else {
+                    matrices[dest] = mat_rref(matrices[src]);
+                    printf("Matrix #%u = REF of Matrix #%u\n", dest, src);
+                }
+            }
         } else if (strcmp(cmd, "free") == 0) {
             unsigned idx;
             if (scanf("%u", &idx) == 1 && idx < MATRIX_COUNT) {

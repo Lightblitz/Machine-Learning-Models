@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <string.h>
-#include "math_func.h"
 #include "errors.h"
 
 // struct mat_s stores the data for a matrix structure
@@ -13,6 +12,25 @@ typedef struct mat_s {
     double **data; // data[i][j] <-> array[i*m + j]
     int is_square;
 } mat;
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// MATH HELPER FUNCTIONS
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+
+#define	RAND_MAX	0x7fffffff
+static double nml_rand_interval(double min, double max) {
+  double d;
+  d = (double) rand() / ((double) RAND_MAX + 1);
+  return (min + d * (max - min));
+}
+/*
+double nml_exp(double base, const int exp) {
+  
+}
+*/
+
 
 
 // ---------------------------------------------------------------
@@ -101,6 +119,20 @@ mat *mat_identity(int dimension) {
     return m;
 }
 
+// mat_cp() copies the matrix m
+mat *mat_cp(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+    }
+    mat *new = mat_new(m->row_count, m->col_count);
+    for (int i = 0; i < m->row_count; i++) {
+        for (int j = 0; j < m->col_count; j++) {
+            new->data[i][j] = m->data[i][j];
+        }
+    }
+    return new;
+}
+
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
 // PRINT FUNCTION PRINTS OUT A MATRIX
@@ -130,9 +162,11 @@ void mat_print(mat *matrix) {
 // STANDARD MATRIX ARITHMETIC
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
+// Note: Operations don't free memory. Must be done manually
+
 
 // mat_add adds two matrices together and returns a pointer to the new matrix. Does not free memory
-mat *mat_add(mat *m1, mat *m2) {
+mat *mat_add(const mat *m1, const mat *m2) {
     if (m1 == NULL || m2 == NULL) {
         MAT_ERROR("mat_add() called with NULL pointers");
         return NULL;
@@ -152,7 +186,7 @@ mat *mat_add(mat *m1, mat *m2) {
 }
 
 // mat_sub subtracts two matrices and returns a pointer to the new matrix. Does not free memory
-mat *mat_sub(mat *m1, mat *m2) {
+mat *mat_sub(const mat *m1, const mat *m2) {
     if (m1 == NULL || m2 == NULL) {
         MAT_ERROR("mat_sub() called with NULL pointers");
         return NULL;
@@ -172,7 +206,7 @@ mat *mat_sub(mat *m1, mat *m2) {
 }
 
 // mat_mult multiplies two matrices and returns a pointer to the new matrix. Does not free memory
-mat *mat_mult(mat *m1, mat *m2) {
+mat *mat_mult(const mat *m1, const mat *m2) {
     if (m1 == NULL || m2 == NULL) {
         MAT_ERROR("mat_mult() called with NULL pointers");
         return NULL;
@@ -193,4 +227,172 @@ mat *mat_mult(mat *m1, mat *m2) {
         MAT_ERROR("mat_mult() called with invalid matrix sizes");
         return NULL;
     }
+}
+
+// mat_neg negates all elements in a matrix
+mat *mat_neg(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("mat_neg() called with NULL pointers")
+        return NULL;
+    }
+    mat *n = mat_new(m->row_count, m->col_count);
+    for (int i = 0; i < m->row_count; i++) {
+        for (int j = 0; j < m->col_count; j++) {
+            n->data[i][j] = - m->data[i][j];
+        }
+    }
+    return n;
+}
+
+// mat_transpose transposes a matrix
+mat *mat_transpose(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("mat_transpose() called with NULL pointers")
+        return NULL;
+    }
+    mat *t = mat_new(m->col_count, m->row_count);
+    for (int i = 0; i < m->row_count; i++) {
+        for (int j = 0; j < m->col_count; j++) {
+            t->data[j][i] = m->data[i][j];
+        }
+    }
+    return t;
+}
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// ELEMENTARY ROW OPERATIONS & COLUMN OPERATIONS
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+
+
+// mat_ero_scalar() performs the ERO of scaling a row by a scalar
+// Effects: Modifies the data stored in m
+void mat_ero_scalar(const mat *m, unsigned row, double scalar) {
+    if (m == NULL) {
+        MAT_ERROR("mat_ero_scalar() called with NULL pointers");
+        return;
+    }
+    if (row < 0) {
+        MAT_ERROR("Function called with negative index");
+    }
+    for (int i = 0; i < m->col_count; i++) {
+        m->data[row][i] *= scalar;
+    }
+}
+
+// mat_ero_swap() performs the ERO of swapping row 1 and row 2
+// Effects: Modifies the data stored in m
+void mat_ero_swap(const mat *m, unsigned row1, unsigned row2) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+    }
+    if (row1 < 0 || row2 < 0) {
+        MAT_ERROR("Function called with negative index");
+    }
+    double *temp = m->data[row1];
+    m->data[row1] = m->data[row2];
+    m->data[row2] = temp;
+}
+
+// mat_ero_add() performs the ERO of adding scalar * row 2 to row 1
+// Effects: Modifies the data stored in m
+void mat_ero_add(const mat *m, unsigned row1, unsigned row2, double scalar) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+    }
+    for (int j = 0; j < m->col_count; j++) {
+        m->data[row1][j] += scalar * m->data[row2][j];
+    }
+}
+
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// FUNCTIONS LEADING TO RREF
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+
+// pivot_finder() returns the index of the first row with a non-zero entry given the column index
+// The row argument tells the function which row to start searching from.
+// Function returns -1 if there is no pivot (i.e. the matrix is degenerate)
+// Example: pivot_finder(m, 1, 1) says to search for the first non-zero entry in the second column
+// starting from the second row
+static int pivot_finder(const mat *m, unsigned col, unsigned row) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return -1;
+    }
+    
+    for (int j = row; j < m->row_count; j++) {
+        if (m->data[j][col] != 0) {
+            return j;
+        }
+    }
+    return -1;
+}
+
+
+// mat_ref() reduces matrix m into reduced echelon form
+mat *mat_ref(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return NULL;
+    }
+    mat *ref = mat_cp(m);
+    int row_ind = 0, col_ind = 0;
+    int pivot;
+    while (row_ind < m->row_count && col_ind < m->col_count) {
+        pivot = pivot_finder(ref, col_ind, row_ind);
+        
+        // If column is 0, move to next column and skip below
+        if (pivot < 0) {
+            col_ind++;
+            continue;
+        }
+
+        // Otherwise reduce the leading coefficient of the pivot to 1
+        mat_ero_scalar(ref, pivot, 1/ref->data[pivot][col_ind]);
+
+        // Swap the pivot row w/ current row
+        mat_ero_swap(ref, pivot, row_ind);
+        
+        // Ensure all numbers below the pivot are zero for REF
+        for (int k = row_ind + 1; k < ref->row_count; k++) {
+            mat_ero_add(ref, k, row_ind, -(ref->data[k][col_ind]));
+        }
+
+        // Iterate to next column and move down one row
+        row_ind++;
+        col_ind++;
+    }
+    return ref;
+}
+
+// mat_rref() finds the reduced row echelon form of a matrix m
+mat *mat_rref(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return NULL;
+    }
+    mat *rref = mat_ref(m);
+    unsigned row_ind = 0, col_ind = 0;
+    while (row_ind < rref->row_count && col_ind < rref->col_count) {
+        printf("%u %u \n", row_ind, col_ind);
+        // If leading one position is a zero, shift to next column
+        if (rref->data[row_ind][col_ind] == 0) {
+            col_ind++;
+            printf("Skipped Column\n");
+            continue;
+        }
+        // Otherwise, row_ind col_ind defines a leading one
+        // Clear the items above the leading one to zero.
+        for (int k = row_ind - 1; k > -1; k--) {
+            printf("Added %.2f * row index %d to row %d \n", -(rref->data[k][col_ind]), row_ind, k);
+            mat_ero_add(rref, k, row_ind, -(rref->data[k][col_ind]));
+        }
+        col_ind++;
+        row_ind++;
+    }
+    return rref;
 }
