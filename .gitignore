@@ -2,3 +2,5 @@
 *.d
 Makefile
 program
+math_func.c
+math_func.h
