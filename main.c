@@ -88,6 +88,13 @@ int main(void) {
                 printf("Created new matrix #%u (%ux%u).\n", idx, rows, cols);
             }
 
+        } else if (strcmp(cmd, "is_square") == 0) {
+            unsigned idx;
+            if (scanf("%u", &idx) == 1 && idx < MATRIX_COUNT) {
+                bool square = mat_is_square(matrices[idx]);
+                printf("Ran mat_is_square on matrix #%u: %d\n", idx, square);
+            }
+
         } else if (strcmp(cmd, "mat_print") == 0) {
             unsigned idx;
             if (scanf("%u", &idx) == 1 && idx < MATRIX_COUNT && matrices[idx]) {
@@ -194,6 +201,12 @@ int main(void) {
                     matrices[dest] = mat_rref(matrices[src]);
                     printf("Matrix #%u = REF of Matrix #%u\n", dest, src);
                 }
+            }
+        } else if (strcmp(cmd, "det") == 0) {
+            unsigned idx;
+            if (scanf("%u", &idx) == 1 && idx < MATRIX_COUNT) {
+                double det = mat_determinant(matrices[idx]);
+                printf("Determinant of matrix #%u is %.2f\n", idx, det);
             }
         } else if (strcmp(cmd, "free") == 0) {
             unsigned idx;

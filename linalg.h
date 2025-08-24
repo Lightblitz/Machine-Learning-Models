@@ -17,9 +17,10 @@ mat *mat_sqr(int dimension);
 mat *mat_rnd(int num_rows, int num_cols, double min, double max);
 mat *mat_identity(int dimension);
 mat *mat_cp(const mat *m);
+bool mat_is_square(const mat *m);
 
 // PRINT FUNCTION
-void mat_print(mat *matrix);
+void mat_print(const mat *matrix);
 
 // ARITHMETIC OPERATIONS ON MATRICES
 mat *mat_add(const mat *m1, const mat *m2);
@@ -37,5 +38,8 @@ void mat_ero_add(const mat *m, unsigned row1, unsigned row2, double scalar);
 // RREF FUNCTIONS
 mat *mat_ref(const mat *m);
 mat *mat_rref(const mat *m);
+
+// DETERMINANT
+double mat_determinant(const mat *m);
 
 #endif // LINALG_H

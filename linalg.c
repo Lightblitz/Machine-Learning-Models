@@ -35,7 +35,7 @@ double nml_exp(double base, const int exp) {
 
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
-// FOLLOWING FUNCTIONS CREATE AND DESTROY THE MATRIX ADT
+// FOLLOWING FUNCTIONS ARE BASIC MATRIX ADT FUNCTIONS
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
 
@@ -133,6 +133,13 @@ mat *mat_cp(const mat *m) {
     return new;
 }
 
+bool mat_is_square(const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+    }
+    return (m->row_count == m->col_count);
+}
+
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
 // PRINT FUNCTION PRINTS OUT A MATRIX
@@ -140,7 +147,7 @@ mat *mat_cp(const mat *m) {
 // ---------------------------------------------------------------
 
 // mat_print prints out a matrix with each entry indicated in the format [i]
-void mat_print(mat *matrix) {
+void mat_print(const mat *matrix) {
     if (matrix == NULL) {
         MAT_ERROR("mat_print() called with NULL matrix");
         return;
@@ -155,6 +162,29 @@ void mat_print(mat *matrix) {
         printf("\n");
     }
     return;
+}
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// READ MATRIX FROM INPUT
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+
+
+// read_mat() reads a matrix from standard input and creates a new matrix
+mat *read_mat() {
+    unsigned row, col;
+    if (scanf("%u %u", &row, &col) == 2) {
+        mat *m = mat_new(row, col);
+        int counter = 0;
+        int max = row * col;
+        double val;
+        while(scanf("%lf", &val) == 1 && counter < val) {
+            m->data[counter / col][counter % col];
+            counter++;
+        }
+        return m;
+    }
 }
 
 // ---------------------------------------------------------------
@@ -306,6 +336,55 @@ void mat_ero_add(const mat *m, unsigned row1, unsigned row2, double scalar) {
     }
 }
 
+// det_ero_scalar() performs the ERO of scaling a row by a scalar
+// Effects: Modifies the data stored in m
+static double det_ero_scalar(const mat *m, unsigned row, double scalar) {
+    if (m == NULL) {
+        MAT_ERROR("mat_ero_scalar() called with NULL pointers");
+        return 0;
+    }
+    if (row < 0) {
+        MAT_ERROR("Function called with negative index");
+    }
+    for (int i = 0; i < m->col_count; i++) {
+        m->data[row][i] *= scalar;
+    }
+    return scalar;
+}
+
+// det_ero_swap() performs the ERO of swapping row 1 and row 2
+// Effects: Modifies the data stored in m
+static int det_ero_swap(const mat *m, unsigned row1, unsigned row2) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return 0;
+    }
+    if (row1 < 0 || row2 < 0) {
+        MAT_ERROR("Function called with negative index");
+    }
+    double *temp = m->data[row1];
+    m->data[row1] = m->data[row2];
+    m->data[row2] = temp;
+    if (row1 == row2) {
+        return 1;
+    } else {
+        return -1;
+    }
+}
+
+// det_ero_add() performs the ERO of adding scalar * row 2 to row 1
+// Effects: Modifies the data stored in m
+static int det_ero_add(const mat *m, unsigned row1, unsigned row2, double scalar) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return 0;
+    }
+    for (int j = 0; j < m->col_count; j++) {
+        m->data[row1][j] += scalar * m->data[row2][j];
+    }
+    return 1;
+}
+
 
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
@@ -396,3 +475,65 @@ mat *mat_rref(const mat *m) {
     }
     return rref;
 }
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// USING REF TO FIND DETERMINANT
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+
+
+// mat_determinant() finds the determinant by multiplying the determinants of the elementary matrices
+// and the resulting REF matrix.
+double mat_determinant (const mat *m) {
+    if (m == NULL) {
+        MAT_ERROR("Function called with NULL pointer");
+        return 0;
+    }
+    if (!mat_is_square(m)) {
+        MAT_ERROR("Function called with non-square matrix");
+        return 0;
+    }
+    mat *ref = mat_cp(m);
+    double det = 1;
+    int row_ind = 0, col_ind = 0;
+    int pivot;
+    while (row_ind < m->row_count && col_ind < m->col_count) {
+        pivot = pivot_finder(ref, col_ind, row_ind);
+        
+        // If column is 0, move to next column and skip below
+        if (pivot < 0) {
+            col_ind++;
+            continue;
+        }
+
+        // Otherwise reduce the leading coefficient of the pivot to 1
+        det *= det_ero_scalar(ref, pivot, 1/ref->data[pivot][col_ind]);
+
+        // Swap the pivot row w/ current row
+        det *= det_ero_swap(ref, pivot, row_ind);
+        
+        // Ensure all numbers below the pivot are zero for REF
+        for (int k = row_ind + 1; k < ref->row_count; k++) {
+            det *= det_ero_add(ref, k, row_ind, -(ref->data[k][col_ind]));
+        }
+
+        // Iterate to next column and move down one row
+        row_ind++;
+        col_ind++;
+    }
+    
+    // multiply along the diagonal of the ref
+    for (int i = 0; i < ref->row_count; i++) {
+        det *= ref->data[i][i];
+    }
+
+    mat_free(ref);
+    return det;
+}
+
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
+// EIGENVALUES AND EIGENVECTORS
+// ---------------------------------------------------------------
+// ---------------------------------------------------------------
