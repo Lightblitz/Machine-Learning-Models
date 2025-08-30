@@ -22,6 +22,9 @@ bool mat_is_square(const mat *m);
 // PRINT FUNCTION
 void mat_print(const mat *matrix);
 
+// READ MATRIX
+mat *read_mat();
+
 // ARITHMETIC OPERATIONS ON MATRICES
 mat *mat_add(const mat *m1, const mat *m2);
 mat *mat_sub(const mat *m1, const mat *m2);

@@ -179,12 +179,17 @@ mat *read_mat() {
         int counter = 0;
         int max = row * col;
         double val;
-        while(scanf("%lf", &val) == 1 && counter < val) {
-            m->data[counter / col][counter % col];
+        while(counter < max) {
+            if (scanf("%lf", &val) != 1) {
+                mat_free(m);
+                return NULL;
+            }
+            m->data[counter / col][counter % col] = val;
             counter++;
         }
         return m;
     }
+    return NULL;
 }
 
 // ---------------------------------------------------------------
@@ -501,31 +506,33 @@ double mat_determinant (const mat *m) {
     while (row_ind < m->row_count && col_ind < m->col_count) {
         pivot = pivot_finder(ref, col_ind, row_ind);
         
-        // If column is 0, move to next column and skip below
+        // If column is 0, then matrix is not invertible
         if (pivot < 0) {
-            col_ind++;
-            continue;
+            mat_free(ref);
+            return 0;
         }
 
         // Otherwise reduce the leading coefficient of the pivot to 1
-        det *= det_ero_scalar(ref, pivot, 1/ref->data[pivot][col_ind]);
+        // det *= det_ero_scalar(ref, pivot, 1/ref->data[pivot][col_ind]);
 
         // Swap the pivot row w/ current row
-        det *= det_ero_swap(ref, pivot, row_ind);
+        if (pivot != row_ind) {
+            det *= det_ero_swap(ref, pivot, row_ind);
+        }
         
         // Ensure all numbers below the pivot are zero for REF
         for (int k = row_ind + 1; k < ref->row_count; k++) {
-            det *= det_ero_add(ref, k, row_ind, -(ref->data[k][col_ind]));
+            det_ero_add(ref, k, row_ind, -(ref->data[k][col_ind] / ref->data[row_ind][col_ind]));
         }
 
         // Iterate to next column and move down one row
         row_ind++;
         col_ind++;
     }
-    
-    // multiply along the diagonal of the ref
-    for (int i = 0; i < ref->row_count; i++) {
-        det *= ref->data[i][i];
+
+    // multiply along the diagonal of the ref 
+    for (int i = 0; i < ref->row_count; i++) { 
+        det *= ref->data[i][i]; 
     }
 
     mat_free(ref);
