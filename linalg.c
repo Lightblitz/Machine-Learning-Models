@@ -490,6 +490,7 @@ mat *mat_rref(const mat *m) {
 
 // mat_determinant() finds the determinant by multiplying the determinants of the elementary matrices
 // and the resulting REF matrix.
+// Correction: This function determines the determinant by row reducing until upper triangular
 double mat_determinant (const mat *m) {
     if (m == NULL) {
         MAT_ERROR("Function called with NULL pointer");
@@ -544,3 +545,12 @@ double mat_determinant (const mat *m) {
 // EIGENVALUES AND EIGENVECTORS
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------
+
+double *mat_eigenvalues(mat *m) {
+    return NULL;
+}
+
+mat *mat_eigenvectors(mat *m) {
+    return NULL;
+}
+
